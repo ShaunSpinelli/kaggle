@@ -1,0 +1,3 @@
+save all csv's to dictionaries then save as pickle files
+need to update datasets.py line 210 def open image, to load draw stroke from file path the , eg from the dictionary filename and draw strokes
+need to update def from_paths and folder source so that get get file names from the dictionay
