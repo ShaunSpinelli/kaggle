@@ -30,7 +30,7 @@ class HerbDataSet(Dataset):
 
     def __getitem__(self, idx):
         item = self.df.iloc[idx]
-        image = np.array(Image.open("{}/{}".format(self.location, item[self.x_name])).resize(self.size))
-        image_tensor = torch.tensor(image/255, dtype=torch.float)
-        return image_tensor, item[self.y_name]
+        image = np.array(Image.open("{}/{}".format(self.location, item[self.x_name])).resize(self.size)).reshape((3, *self.size))
+        image_tensor = torch.tensor(image/255, dtype=torch.float).cuda()
+        return image_tensor, torch.tensor(item[self.y_name]).cuda()
 
