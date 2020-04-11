@@ -57,11 +57,13 @@ class Training:
             print(f'Epoch {i}/{self.epochs}')
             try:
                 for batch in self.data:
-                    self.train_step(batch)
+                    x,y,z = batch
+                    self.train_step((x,y))
                     self.step += 1
                 self.metrics.reset()
             finally:
                 print('step failed at: {}'.format(self.step))
+                print('label {}, label type'.format(z, type(z)))
                 self.save_checkpoint()
 
     def train_cancel(self):
