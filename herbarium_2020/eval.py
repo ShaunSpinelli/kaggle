@@ -48,7 +48,7 @@ class Eval:
 
     def run_once(self):
         """Used to run after epoch or just once on entire eval set"""
-        self.load_checkpoint(self.checkpoint_path)
+        self.load_checkpoint(self.checkpoint_path, gpu=True)
         for batch in self.data:
             self.train_step(batch)
             self.step += 1
@@ -63,10 +63,13 @@ class Eval:
                 self.step += 1
             self.metrics.reset()
 
-    def load_checkpoint(self, path):
+    def load_checkpoint(self, path, gpu=False):
         """Load checkpoint from directory"""
         self.model.load_state_dict(torch.load(path))
-        self.model.cpu()
+        if gpu:
+            self.model.gpu()
+        else:
+            self.model.cpu()
         self.model.eval()
 
     def wait_load_new_checkpoint(self):

@@ -12,3 +12,5 @@
 
 - adative learnining rate per layer
 - add addintional linear layers ?
+
+https://medium.com/@ducha.aiki/thanks-radek-7th-place-solution-to-hwi-2019-competition-738624e4c885
