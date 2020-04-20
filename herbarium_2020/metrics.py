@@ -4,7 +4,7 @@
 import logging as lg
 
 import numpy as np
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score
 
 _logger = lg.getLogger("metrics")
 
@@ -37,7 +37,11 @@ class Accuracy(Metric):
         return "accuracy"
 
     def calculation(self, predictions, labels):
-        preds_np = np.argmax(predictions.numpy(), axis=1) # Note: not sure if this axis is right
+        preds_np = predictions.numpy()
+        if len(preds_np.shape) == 1: # AdaptiveLogSoftmaxWithLoss returns preds
+            final_preds = preds_np
+        else:
+            final_preds = np.argmax(preds_np, axis=1) # Note: not sure if this axis is right
         x = np.sum(preds_np == labels.numpy()) / preds_np.size
         return x
 
@@ -79,6 +83,16 @@ class Dice(Metric):
         union = np.sum(labels, axis=[1, 2, 3]) + np.sum(predictions, axis=[1, 2, 3])
         dice = np.mean((2. * intersection + smooth) / (union + smooth), axis=0)
         return dice
+
+
+class F1(Metric):
+    def __str__(self):
+        return "macro F1"
+
+    def calculation(self, predictions, labels):
+        preds_np, labels_np = predictions.numpy(), labels.numpy()
+        final_preds = np.argmax(preds_np, axis=1)
+        return f1_score(labels_np, final_preds, average="macro")
 
 
 class MetricManager:

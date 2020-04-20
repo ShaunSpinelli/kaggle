@@ -5,6 +5,8 @@ import logging as lg
 
 import torch
 
+from tqdm import tqdm_notebook
+
 # from . import metrics
 _logger = lg.getLogger("train")
 
@@ -55,21 +57,15 @@ class Training:
         for i in range(self.epochs):
             # _logger.info(f'Epoch {i}/{self.epochs}')
             print(f'Epoch {i}/{self.epochs}')
-            try:
-                for batch in self.data:
-                    x,y,z = batch
-                    self.train_step((x,y))
-                    self.step += 1
-                self.metrics.reset()
-            finally:
-                print('step failed at: {}'.format(self.step))
-                print('label {}, label type'.format(z, type(z)))
-                self.save_checkpoint()
+            for batch in tqdm_notebook(self.data):
+                self.train_step(batch)
+                self.step += 1
+            self.metrics.reset()
+            self.save_checkpoint()
 
-    def train_cancel(self):
+    def run(self):
         try:
             self.train_loop()
         except KeyboardInterrupt:
             _logger.debug("Quitting due to user cancel")
             self.save_checkpoint()
-
