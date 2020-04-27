@@ -38,10 +38,7 @@ class Accuracy(Metric):
 
     def calculation(self, predictions, labels):
         preds_np = predictions.numpy()
-        if len(preds_np.shape) == 1: # AdaptiveLogSoftmaxWithLoss returns preds
-            final_preds = preds_np
-        else:
-            final_preds = np.argmax(preds_np, axis=1) # Note: not sure if this axis is right
+        preds_np = np.argmax(predictions.numpy(), axis=1) # Note: not sure if this axis is right
         x = np.sum(preds_np == labels.numpy()) / preds_np.size
         return x
 
