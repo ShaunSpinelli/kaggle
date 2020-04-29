@@ -5,15 +5,20 @@
 from pathlib import Path
 import time
 
+import pandas as pd
+import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 import torch.nn as nn
+import torchvision.models as models
 
+from tqdm import tqdm_notebook
 
 import metrics
 import model
-import dataset
+import datatset
+import utils
 
 
 class Eval:
@@ -49,8 +54,8 @@ class Eval:
     def run_once(self):
         """Used to run after epoch or just once on entire eval set"""
         self.load_checkpoint(self.checkpoint_path, gpu=True)
-        for batch in self.data:
-            self.train_step(batch)
+        for batch in tqdm_notebook(self.data):
+            self.eval_step(batch)
             self.step += 1
         self.metrics.reset()
 
@@ -58,16 +63,17 @@ class Eval:
         """Run eval continually while model is training"""
         while True:
             self.wait_load_new_checkpoint()
-            for batch in self.data:
-                self.train_step(batch)
+            for batch in tqdm_notebook(self.data):
+                self.eval_step(batch)
                 self.step += 1
             self.metrics.reset()
 
     def load_checkpoint(self, path, gpu=False):
         """Load checkpoint from directory"""
+        print(f'Loading checkpoint {path}')
         self.model.load_state_dict(torch.load(path))
         if gpu:
-            self.model.gpu()
+            self.model.cuda()
         else:
             self.model.cpu()
         self.model.eval()
@@ -75,34 +81,40 @@ class Eval:
     def wait_load_new_checkpoint(self):
         """Waits till new checkpoint then loads checkpoint"""
         while True:
-            models_idx = [int(m.stem[-1]) for m in self.checkpoint_path.iterdir()].sort()
-            latest = models_idx[-1]
+            models_idx = [int(m.stem.split("-")[-1]) for m in self.checkpoint_path.iterdir()]
+            latest = np.max(models_idx) if len(models_idx) > 0 else -1
             if latest > self.current_check:
-                latest = self.current_check
+                self.current_check = latest
                 self.load_checkpoint(f'{self.checkpoint_path}/model-{latest}.pth')
                 break
-            time.sleep(30)
+            time.sleep(5)  # waiting 30 min
 
 
-def run_eval(data, checkpoints_dir, log_dir):
+def run_eval(data_dir, checkpoints_dir, log_dir):
 
-    # Data
-    images_path = data/"images"
-    labels_path = data/"labels"
-    ds = dataset.HeartDataSet(images_path, labels_path)
-    loader = DataLoader(ds, batch_size=8, shuffle=True)
+    # load and update labels
+    df = pd.read_csv(data_dir / "train.csv")
+    df = df[["file_name", "category_id"]]
+    classes_map = utils.load_json(data_dir / "classes_map.json")
+
+    # Update class labels
+    new_labels = [classes_map[str(i)] for i in df["category_id"]]
+    df["new_labels"] = new_labels
+
+    ds = datatset.HerbDataSet(df, data_dir, 256, label="new_labels")
+    loader = DataLoader(ds, batch_size=16, shuffle=True)
 
     # Metrics
     acc = metrics.Accuracy()
-    miou = metrics.Miou()
+    f1 = metrics.F1()
     writer = SummaryWriter(log_dir/"validation")
-    manager = metrics.MetricManager([acc, miou], writer)
+    manager = metrics.MetricManager([acc, f1], writer)
 
     # Loss
     criterion = nn.CrossEntropyLoss()
-    # criterion = nn.CrossEntropyLoss(weight=torch.tensor([1e-3,1,1,1], device="cuda"))
 
     # Model
-    unet = model.ResNetUNet(4)
+    m = model.get_model(models.resnet50(pretrained=False), p1=0, p2=0,
+                        device="gpu")  # no drop out, trying to over fit
 
-    Eval(manager, criterion, loader, unet, checkpoints_dir).run()
+    Eval(manager, criterion, loader, m, checkpoints_dir).run()

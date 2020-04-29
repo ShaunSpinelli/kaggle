@@ -60,6 +60,8 @@ class Training:
             for batch in tqdm_notebook(self.data):
                 self.train_step(batch)
                 self.step += 1
+                if self.step % 1000:
+                    self.save_checkpoint()
             self.metrics.reset()
             self.save_checkpoint()
 

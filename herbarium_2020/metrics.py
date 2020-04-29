@@ -37,7 +37,6 @@ class Accuracy(Metric):
         return "accuracy"
 
     def calculation(self, predictions, labels):
-        preds_np = predictions.numpy()
         preds_np = np.argmax(predictions.numpy(), axis=1) # Note: not sure if this axis is right
         x = np.sum(preds_np == labels.numpy()) / preds_np.size
         return x

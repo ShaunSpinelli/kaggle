@@ -12,10 +12,12 @@ def get_head(input_size, p1=0.5, p2=0.5):
     # potential do use batch norm after each drop out
     return nn.Sequential(
         nn.Dropout(p=p1),
-        nn.Linear(in_features=input_size, out_features=input_size//2),
+        nn.BatchNorm2d(in_features=input_size),
+        nn.Linear(in_features=input_size, out_features=input_size*2),
         nn.ReLU(),
         nn.Dropout(p=p2),
-        nn.Linear(in_features=input_size//2, out_features=NUM_CLASSES)
+        nn.BatchNorm2d(in_features=input_size*2),
+        nn.Linear(in_features=input_size*2, out_features=NUM_CLASSES)
     )
 
 
